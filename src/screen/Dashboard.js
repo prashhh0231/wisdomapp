@@ -15,14 +15,22 @@ import {channalLogoUrl, firstData} from '../constants/index';
 const Dashboard = () => {
   const [videoDetails, setvideoDetails] = useState(firstData);
   const [videoList, setvideoList] = useState([]);
-  const [pageNo, setPageNo] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isErr, setIsErr] = useState(false);
+  const [api, setApi] = useState(
+    `http://wisdomapp.in/api/v1/content/?page=1&limit=10`,
+  );
 
   const apiCall = async () => {
-    const response = await fetch(
-      `http://wisdomapp.in/api/v1/content/?page=${pageNo}&limit=10`,
-    );
+    setIsLoading(true);
+    const response = await fetch(api);
     const data = await response.json();
+    if (response?.status !== 200) {
+      setIsErr(true);
+    }
     setvideoList([...videoList, ...data?.results]);
+    setApi(data.next);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -30,7 +38,6 @@ const Dashboard = () => {
   }, []);
 
   const loadMore = () => {
-    setPageNo(setPageNo + 1);
     apiCall();
   };
 
@@ -68,18 +75,23 @@ const Dashboard = () => {
         </View>
       </View>
       <Text style={[styles.whiteTxt, styles.nextTxt]}>Up Next</Text>
-      <FlatList
-        data={videoList}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.05}
-        style={styles.content}
-        renderItem={renderItem}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyList}>
-            <Text style={styles.emptyListTxt}>No suggestation found !!</Text>
-          </View>
-        )}
-      />
+      {isLoading && <Text style={styles.loadingTXt}>Loading...</Text>}
+      {!isLoading && (
+        <FlatList
+          data={videoList}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.05}
+          style={styles.content}
+          renderItem={renderItem}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyList}>
+              <Text style={styles.emptyListTxt}>
+                {isErr ? 'Opps something went wrong' : 'Data not found'}
+              </Text>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 };
@@ -129,5 +141,10 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     fontSize: 22,
+  },
+  loadingTXt: {
+    fontSize: 30,
+    color: 'red',
+    marginLeft: 30,
   },
 });
